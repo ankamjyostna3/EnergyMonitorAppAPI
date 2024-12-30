@@ -1,0 +1,14 @@
+{
+    "Records": [
+      {
+        "s3": {
+          "bucket": {
+            "name": "pge-energy-bucket"
+          },
+          "object": {
+            "key": "20241229172515_test.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA6K5V7NOAC3AMFVSZ%2F20…"
+          }
+        }
+      }
+    ]
+  }

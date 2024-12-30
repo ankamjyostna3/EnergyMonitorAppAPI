@@ -1,0 +1,13 @@
+aws:
+  region: "us-west-2"
+  cognito:
+    client_id: "4135iudps5j1oe7scipboip6sf"
+    client_secret: "1r0hlerqclf49ogbpv25r7ridl63pk1nse373ft7f7k73ic2129r"
+    redirect_url: "https://d84l1y8p4kdic.cloudfront.net"
+    issuer_url: "https://cognito-idp.us-west-2.amazonaws.com/us-west-2_QMNqg83TF"
+    user_pool_id: "us-west-2_QMNqg83TF"
+  lambda:
+    function_name: "csvProcessor"
+    role: "arn:aws:iam::985539767168:role/LambdaS3DynamoDBRole"
+  s3:
+    bucket_name: "pge-energy-bucket"
