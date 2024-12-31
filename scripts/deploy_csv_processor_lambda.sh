@@ -3,7 +3,7 @@
 # Set variables
 LAMBDA_FUNCTION_NAME="csvProcessor"
 GO_FILE_PATH="../lambdas/csvProcessor/main.go"
-ZIP_FILE="deployment.zip"
+ZIP_FILE="csv_processor.zip"
 ROLE_ARN="arn:aws:iam::985539767168:role/LambdaS3DynamoDBRole"
 REGION="us-west-2"
 BUILD_DIR="build"

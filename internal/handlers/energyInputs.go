@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -42,8 +43,6 @@ func init() {
 	db = dynamodb.New(sess)
 
 	s3Client = s3.New(sess)
-	// s3Uploader = s3manager.NewUploader(sess)
-
 	lambdaClient = lambda.New(sess)
 }
 
@@ -123,24 +122,9 @@ func SaveEnergyDataHandler(w http.ResponseWriter, r *http.Request) {
 		data.Date = time.Now().Format(time.RFC3339)
 	}
 
-	av, err := dynamodbattribute.MarshalMap(data)
-	if err != nil {
-		response := Response{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to marshal data: %v", err),
-		}
+	// Insert the data into the EnergyData table
+	err = putEnergyData(data)
 
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	input := &dynamodb.PutItemInput{
-		TableName: aws.String("EnergyData"),
-		Item:      av,
-	}
-
-	_, err = db.PutItem(input)
 	if err != nil {
 		response := Response{}
 		response.Success = false
@@ -150,11 +134,55 @@ func SaveEnergyDataHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if data.Date is the current date
+	currentDate := time.Now().Format("2006-01-02")
+	if data.Date == currentDate {
+		// Invoke the thresholdAlert Lambda function
+		invokeThresholdAlertsLambda(data)
+	}
+
 	response := Response{
 		Success: true,
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+func invokeThresholdAlertsLambda(data EnergyData) {
+	// Prepare the payload
+	payload, err := json.Marshal(map[string]string{"UserID": data.UserID})
+	if err != nil {
+		log.Printf("Failed to marshal payload: %v", err)
+		return
+	}
+
+	// Invoke the Lambda function
+	input := &lambda.InvokeInput{
+		FunctionName: aws.String(config.AppConfig.AWS.Lambda.ThresholdAlertLambda),
+		Payload:      payload,
+	}
+
+	result, err := lambdaClient.Invoke(input)
+	if err != nil {
+		log.Printf("Failed to invoke Lambda function: %v", err)
+		return
+	}
+
+	// Log the result
+	log.Printf("Lambda function invoked successfully: %s", result.Payload)
+}
+
+func putEnergyData(data EnergyData) error {
+	av, err := dynamodbattribute.MarshalMap(data)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String("EnergyData"),
+		Item:      av,
+	})
+	return err
 }
 
 func GetPresignedURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +247,7 @@ func UploadEnergyDataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &lambda.InvokeInput{
-		FunctionName: aws.String(config.AppConfig.AWS.Lambda.FunctionName),
+		FunctionName: aws.String(config.AppConfig.AWS.Lambda.CSVProcessorLambda),
 		Payload:      payloadBytes,
 	}
 

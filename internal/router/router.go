@@ -13,7 +13,7 @@ func SetupRouter() http.Handler {
 
 	//handle Authentication
 	router.HandleFunc("/auth/login", handlers.HandleLogin).Methods("POST")
-	router.HandleFunc("/auth/signup", handlers.HandleSignup).Methods("GET")
+	router.HandleFunc("/auth/signup", handlers.SignupHandler).Methods("POST")
 	router.HandleFunc("/auth/signout", handlers.HandleLogout).Methods("POST")
 
 	//handle Energy inputs

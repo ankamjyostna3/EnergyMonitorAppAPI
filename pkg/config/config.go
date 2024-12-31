@@ -18,8 +18,9 @@ type Config struct {
 			UserPoolID   string `yaml:"user_pool_id"`
 		} `yaml:"cognito"`
 		Lambda struct {
-			FunctionName string `yaml:"function_name"`
-			Role         string `yaml:"role"`
+			CSVProcessorLambda   string `yaml:"csv-processor-lambda"`
+			ThresholdAlertLambda string `yaml:"threshold-alert-lambda"`
+			Role                 string `yaml:"role"`
 		} `yaml:"lambda"`
 		S3 struct {
 			BucketName string `yaml:"bucket_name"`

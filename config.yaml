@@ -7,7 +7,8 @@ aws:
     issuer_url: "https://cognito-idp.us-west-2.amazonaws.com/us-west-2_QMNqg83TF"
     user_pool_id: "us-west-2_QMNqg83TF"
   lambda:
-    function_name: "csvProcessor"
+    csv-processor-lambda: "csvProcessor"
+    threshold-alert-lambda: "thresholdAlert"
     role: "arn:aws:iam::985539767168:role/LambdaS3DynamoDBRole"
   s3:
     bucket_name: "pge-energy-bucket"

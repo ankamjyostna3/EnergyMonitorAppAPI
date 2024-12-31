@@ -31,7 +31,7 @@ func init() {
 	cognitoClient = cognitoidentityprovider.New(sess)
 }
 
-func HandleSignup(writer http.ResponseWriter, request *http.Request) {
+func SignupHandler(writer http.ResponseWriter, request *http.Request) {
 	var user struct {
 		Username string `json:"username"`
 		Password string `json:"password"`

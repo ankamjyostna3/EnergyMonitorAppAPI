@@ -4,23 +4,27 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/aws/aws-lambda-go/lambda"
+	lambago "github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	lambda "github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var (
-	db       *dynamodb.DynamoDB
-	s3Client *s3.S3
+	db           *dynamodb.DynamoDB
+	s3Client     *s3.S3
+	lambdaClient *lambda.Lambda
 )
 
 func init() {
@@ -29,6 +33,13 @@ func init() {
 	}))
 	db = dynamodb.New(sess)
 	s3Client = s3.New(sess)
+	lambdaClient = lambda.New(sess)
+}
+
+type EnergyData struct {
+	UserID string  `json:"UserID"`
+	Date   string  `json:"Date"`
+	Usage  float64 `json:"Usage"`
 }
 
 type InputPayload struct {
@@ -83,14 +94,14 @@ func handler(ctx context.Context, payload InputPayload) (Response, error) {
 		log.Printf("Failed to read CSV file: %v", err)
 		return Response{Message: "Failed to read CSV file", Error: err.Error()}, err
 	}
-
+	// Process each record
 	for _, record := range records {
 		// Assuming the CSV columns are: date, usage
 		date := record[0]
 		energy, err := strconv.ParseFloat(record[1], 64)
 		if err != nil || energy < 0 {
 			log.Printf("Failed to convert energy to non-negative float: %v", err)
-			return Response{Message: "Failed to convert energy to non-negative float", Error: err.Error()}, err
+			continue
 		}
 
 		// Save to DynamoDB
@@ -113,8 +124,28 @@ func handler(ctx context.Context, payload InputPayload) (Response, error) {
 			log.Printf("Failed to save record to DynamoDB: %v", err)
 			return Response{Message: "Failed to save record to DynamoDB", Error: err.Error()}, err
 		}
-
 		log.Println("Successfully saved record to DynamoDB:", item)
+
+		// Check if the date is the current date
+		currentDate := time.Now().Format("2006-01-02")
+		if date == currentDate {
+			// Call thresholdAlert Lambda function
+			payload := map[string]string{
+				"UserID": payload.UserID,
+			}
+			payloadBytes, err := json.Marshal(payload)
+			if err != nil {
+				log.Printf("Failed to marshal payload for user %s: %v", payload["UserID"], err)
+				continue
+			}
+			_, err = lambdaClient.Invoke(&lambda.InvokeInput{
+				FunctionName: aws.String("thresholdAlert"),
+				Payload:      payloadBytes,
+			})
+			if err != nil {
+				log.Printf("Failed to invoke thresholdAlert Lambda for user %s: %v", payload["UserID"], err)
+			}
+		}
 	}
 
 	log.Println("Handler completed successfully")
@@ -122,5 +153,5 @@ func handler(ctx context.Context, payload InputPayload) (Response, error) {
 }
 
 func main() {
-	lambda.Start(handler)
+	lambago.Start(handler)
 }
