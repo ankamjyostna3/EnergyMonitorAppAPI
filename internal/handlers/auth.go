@@ -2,9 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"EnergyMonitorAppAPI/internal/services"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 )
 
 type Response struct {
@@ -12,6 +18,17 @@ type Response struct {
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
 	Token   string `json:"token,omitempty"`
+}
+
+var (
+	cognitoClient *cognitoidentityprovider.CognitoIdentityProvider
+)
+
+func init() {
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"),
+	}))
+	cognitoClient = cognitoidentityprovider.New(sess)
 }
 
 func HandleSignup(writer http.ResponseWriter, request *http.Request) {
@@ -35,9 +52,34 @@ func HandleSignup(writer http.ResponseWriter, request *http.Request) {
 	response := map[string]string{"message": "Signup successful for user " + user.Username}
 	json.NewEncoder(writer).Encode(response)
 }
-func HandleLogout(writer http.ResponseWriter, request *http.Request) {
-	// Here, you would clear the session or cookie if stored.
-	http.Redirect(writer, request, "/", http.StatusFound)
+
+func HandleLogout(w http.ResponseWriter, r *http.Request) {
+	_, err := validateTokenAndGetUserID(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	tokenString := r.Header.Get("Authorization")
+
+	// Remove 'Bearer ' prefix
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+	// Sign out the user by invalidating the access token
+	input := &cognitoidentityprovider.GlobalSignOutInput{
+		AccessToken: aws.String(tokenString),
+	}
+
+	_, err = cognitoClient.GlobalSignOut(input)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to sign out: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"message": "Successfully signed out",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func HandleLogin(writer http.ResponseWriter, request *http.Request) {

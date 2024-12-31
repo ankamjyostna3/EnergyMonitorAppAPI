@@ -11,10 +11,10 @@ import (
 func SetupRouter() http.Handler {
 	router := mux.NewRouter()
 
-	//handles login
-	router.HandleFunc("/login", handlers.HandleLogin).Methods("POST")
-	router.HandleFunc("/logout", handlers.HandleLogout).Methods("GET")
-	router.HandleFunc("/signup", handlers.HandleSignup).Methods("POST")
+	//handle Authentication
+	router.HandleFunc("/auth/login", handlers.HandleLogin).Methods("POST")
+	router.HandleFunc("/auth/signup", handlers.HandleSignup).Methods("GET")
+	router.HandleFunc("/auth/signout", handlers.HandleLogout).Methods("POST")
 
 	//handle Energy inputs
 	router.HandleFunc("/energy/input", handlers.SaveEnergyDataHandler).Methods("POST")
@@ -23,6 +23,10 @@ func SetupRouter() http.Handler {
 
 	// Handle Energy history
 	router.HandleFunc("/energy/history", handlers.GetEnergyHistoryHandler).Methods("GET")
+
+	// Handle Alerts
+	router.HandleFunc("/alerts", handlers.GetAlertsHandler).Methods("GET")
+	router.HandleFunc("/alerts", handlers.UpdateAlertsHandler).Methods("POST")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:8081"}, // Allow your frontend's origin

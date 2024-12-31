@@ -20,9 +20,9 @@ import (
 )
 
 type EnergyData struct {
-	UserID string `json:"UserID"`
-	Energy int    `json:"Energy"`
-	Date   string `json:"Date"`
+	UserID string  `json:"UserID"`
+	Energy float64 `json:"Energy"`
+	Date   string  `json:"Date"`
 }
 
 type UploadRequest struct {
@@ -53,9 +53,7 @@ func validateTokenAndGetUserID(r *http.Request) (string, error) {
 		return "", fmt.Errorf("missing token")
 	}
 	// Remove 'Bearer ' prefix if it exists
-	if strings.HasPrefix(tokenString, "Bearer ") {
-		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
-	}
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return getKey(token, r)
 	})

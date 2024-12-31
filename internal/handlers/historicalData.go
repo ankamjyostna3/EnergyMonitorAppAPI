@@ -14,7 +14,11 @@ import (
 func GetEnergyHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
-	userID := r.URL.Query().Get("userID")
+	userID, err := validateTokenAndGetUserID(r)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
 
 	if startDate == "" || endDate == "" || userID == "" {
 		http.Error(w, "Missing startDate, endDate, or userID query parameter", http.StatusBadRequest)
