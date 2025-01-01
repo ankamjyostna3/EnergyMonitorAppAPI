@@ -23,6 +23,7 @@ func SetupRouter() http.Handler {
 
 	// Handle Energy history
 	router.HandleFunc("/energy/history", handlers.GetEnergyHistoryHandler).Methods("GET")
+	router.HandleFunc("/energy/summary", handlers.GetEnergySummaryHandler).Methods("GET") // New route
 
 	// Handle Alerts
 	router.HandleFunc("/alerts", handlers.GetAlertsHandler).Methods("GET")
